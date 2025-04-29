@@ -1,3 +1,2 @@
-2025/04/29-07:04:04.827 6ae5 Reusing MANIFEST /project/sandbox/user-workspace/whatsapp-service/.wwebjs_auth/session/Default/Service Worker/Database/MANIFEST-000001
-2025/04/29-07:04:04.827 6ae5 Recovering log #3
-2025/04/29-07:04:04.827 6ae5 Reusing old log /project/sandbox/user-workspace/whatsapp-service/.wwebjs_auth/session/Default/Service Worker/Database/000003.log 
+2025/04/29-11:07:55.596 2c75 Creating DB /project/sandbox/user-workspace/whatsapp-service/.wwebjs_auth/session/Default/Service Worker/Database since it was missing.
+2025/04/29-11:07:55.693 2c75 Reusing MANIFEST /project/sandbox/user-workspace/whatsapp-service/.wwebjs_auth/session/Default/Service Worker/Database/MANIFEST-000001
