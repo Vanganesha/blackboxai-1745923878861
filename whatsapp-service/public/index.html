@@ -16,7 +16,7 @@
             </div>
             
             <div id="qr-container" class="flex justify-center mb-6">
-                <img id="qr-code" src="" alt="QR Code" class="hidden">
+                <img id="qr-code" src="" alt="QR Code" class="hidden max-w-[200px]">
             </div>
 
             <div id="connection-status" class="text-center mb-6 hidden">
@@ -29,21 +29,62 @@
                     <h2 class="font-semibold text-gray-700 mb-2">Status</h2>
                     <p id="connection-info" class="text-gray-600">Not connected</p>
                 </div>
+
+                <div id="error-container" class="hidden p-4 bg-red-50 rounded-lg">
+                    <p id="error-message" class="text-red-600"></p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         const API_KEY = 'your-secret-api-key';
+        const API_BASE_URL = 'http://localhost:3000/api';
         let checkStatusInterval;
+
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            const errorMessage = document.getElementById('error-message');
+            errorContainer.classList.remove('hidden');
+            errorMessage.textContent = message;
+        }
+
+        function hideError() {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.classList.add('hidden');
+        }
+
+        async function fetchWithTimeout(resource, options = {}) {
+            const { timeout = 5000 } = options;
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+
+            try {
+                const response = await fetch(resource, {
+                    ...options,
+                    signal: controller.signal
+                });
+                clearTimeout(id);
+                return response;
+            } catch (error) {
+                clearTimeout(id);
+                throw error;
+            }
+        }
 
         async function getQRCode() {
             try {
-                const response = await fetch('http://localhost:3000/api/auth/qr', {
+                hideError();
+                const response = await fetchWithTimeout(`${API_BASE_URL}/auth/qr`, {
                     headers: {
                         'x-api-key': API_KEY
                     }
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
                 
                 if (data.success && data.qrCode) {
@@ -51,20 +92,28 @@
                     qrImage.src = data.qrCode;
                     qrImage.classList.remove('hidden');
                     startStatusCheck();
+                } else {
+                    throw new Error('Invalid response format');
                 }
             } catch (error) {
                 console.error('Error fetching QR code:', error);
+                showError('Error loading QR Code. Please refresh the page to try again.');
                 document.getElementById('status').textContent = 'Error loading QR Code';
             }
         }
 
         async function checkStatus() {
             try {
-                const response = await fetch('http://localhost:3000/api/auth/status', {
+                const response = await fetchWithTimeout(`${API_BASE_URL}/auth/status`, {
                     headers: {
                         'x-api-key': API_KEY
                     }
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
                 
                 if (data.success && data.status.ready) {
@@ -73,18 +122,30 @@
                     document.getElementById('connection-info').textContent = 'Connected to WhatsApp';
                     document.getElementById('status').textContent = 'Connected to WhatsApp';
                     clearInterval(checkStatusInterval);
+                    hideError();
                 }
             } catch (error) {
                 console.error('Error checking status:', error);
+                showError('Error checking connection status');
             }
         }
 
         function startStatusCheck() {
+            if (checkStatusInterval) {
+                clearInterval(checkStatusInterval);
+            }
             checkStatusInterval = setInterval(checkStatus, 5000);
         }
 
         // Initialize
         getQRCode();
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (checkStatusInterval) {
+                clearInterval(checkStatusInterval);
+            }
+        });
     </script>
 </body>
 </html>
